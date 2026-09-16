@@ -36,3 +36,17 @@ uv run migration-run --skip-llm
 ## Narrative
 
 *“We had a discovery call Friday. By Monday we had a validated 5-table PoC in Atlas.”*
+
+## Troubleshooting HITL resume
+
+**“The agent could not be resumed”** — usually not a bad JSON payload. Check orchestration logs:
+
+```bash
+docker logs rdbms-migration-poc-agent-oe-1 2>&1 | tail -20
+```
+
+If you see `workflow is nondeterministic: step 2 committed with different state`, the suspended run cannot be replayed. **Start a new Playground session**, send one message such as *“Run the bundled e-commerce migration PoC end to end”*, and submit each HITL answer once (do not double-click Submit).
+
+After changing `agent.yaml`, restart local dev: `agentic dev down && agentic dev up`.
+
+**HITL answers:** plain language is enough (`Approved — proceed to schema design`). Include “reject” if you want to block the step.

@@ -25,6 +25,7 @@ from agent_rdbms_migration_poc.migration.plan import (
     load_plan,
 )
 from agent_rdbms_migration_poc.migration.postgres_conn import check_postgres, resolve_postgres_uri
+from agent_rdbms_migration_poc.hitl import NATURAL_LANGUAGE_RESPONSE_SCHEMA, normalize_hitl_answer
 from agent_rdbms_migration_poc.migration.runner import run_migration, run_validation
 from agent_rdbms_migration_poc.workspace import (
     get_artifact,
@@ -35,15 +36,17 @@ from agent_rdbms_migration_poc.workspace import (
 
 DEMO_TABLES = frozenset({"customers", "products", "orders", "order_items", "payments"})
 
-_APPROVAL_SCHEMA: dict[str, Any] = {
-    "type": "object",
-    "required": ["decision"],
-    "properties": {
-        "decision": {"type": "string", "enum": ["approved", "rejected"]},
-        "reviewer_notes": {"type": "string"},
-    },
-    "additionalProperties": False,
-}
+
+def _await_hitl_approval(payload: dict[str, Any]) -> dict[str, str]:
+    """Suspend for architect input; accept plain text or legacy JSON object answers."""
+    payload = {**payload, "response_schema": NATURAL_LANGUAGE_RESPONSE_SCHEMA}
+    raw = interrupt(payload)
+    try:
+        return normalize_hitl_answer(raw)
+    except ValueError as err:
+        raise ValueError(
+            f"{err}. Reply with e.g. 'Approved' or 'Rejected — reason'."
+        ) from err
 
 
 def register(app: App) -> None:
@@ -386,18 +389,15 @@ def register(app: App) -> None:
         gaps: str = "",
     ) -> str:
         """HITL gate 1: architect confirms discovery extraction or records gaps."""
-        answer = interrupt(
+        answer = _await_hitl_approval(
             {
                 "action": "review_discovery",
                 "summary": summary,
                 "completeness_score": completeness_score,
                 "gaps": gaps,
                 "message": "Approve discovery intake before schema design?",
-                "response_schema": _APPROVAL_SCHEMA,
             }
         )
-        if not isinstance(answer, dict):
-            raise TypeError("discovery approval must be an object")
         put_artifact("hitl_discovery", answer)
         return json.dumps(answer, indent=2)
 
@@ -407,17 +407,14 @@ def register(app: App) -> None:
         embedding_rationale: str,
     ) -> str:
         """HITL gate 2: architect signs off on target document model and mapping."""
-        answer = interrupt(
+        answer = _await_hitl_approval(
             {
                 "action": "review_schema",
                 "schema_summary": schema_summary,
                 "embedding_rationale": embedding_rationale,
                 "message": "Approve target schema and field mapping?",
-                "response_schema": _APPROVAL_SCHEMA,
             }
         )
-        if not isinstance(answer, dict):
-            raise TypeError("schema approval must be an object")
         put_artifact("hitl_schema", answer)
         if answer.get("decision") != "approved":
             return json.dumps({"status": "blocked", "detail": answer}, indent=2)
@@ -430,17 +427,14 @@ def register(app: App) -> None:
         risk_summary: str,
     ) -> str:
         """HITL gate 3: authorize migration run against Atlas."""
-        answer = interrupt(
+        answer = _await_hitl_approval(
             {
                 "action": "authorize_execution",
                 "target_database": target_database,
                 "postgres_uri_hint": postgres_uri_hint,
                 "risk_summary": risk_summary,
                 "message": "Authorize migration execution?",
-                "response_schema": _APPROVAL_SCHEMA,
             }
         )
-        if not isinstance(answer, dict):
-            raise TypeError("execution approval must be an object")
         put_artifact("hitl_execution", answer)
         return json.dumps(answer, indent=2)

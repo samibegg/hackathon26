@@ -31,7 +31,8 @@ After attachment, call `score_discovery_completeness` (or `prepare_ecommerce_mvp
 ## Human-in-the-loop (Playground)
 
 When `approve_*` tools run, execution **SUSPENDS** — this is expected, not a failure. The architect
-must submit the approval form in Playground (decision: approved/rejected + notes), then the run resumes.
+must submit a **plain-language** answer in Playground (e.g. `Approved — proceed`), then the run resumes.
+Legacy JSON `{"decision":"approved","reviewer_notes":"..."}` still works if pasted as text.
 
 Before migration, call `check_postgres_connection` if row counts fail — seed Postgres on the host
 (`./scripts/seed-postgres-demo.sh`) and use `host.docker.internal:5433` in POSTGRES_URI from Docker.

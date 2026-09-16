@@ -2,7 +2,9 @@ name: rdbms-migration-poc-agent
 entrypoint: agent_rdbms_migration_poc.main:app
 framework: langgraph
 features:
-    durable_workflow: true
+    # Local HITL resume replays the LLM step; durable mode can fail with
+    # "workflow is nondeterministic" when the model output differs on replay.
+    durable_workflow: false
     guardrails: false
     memory: false
 sandboxes:
