@@ -1,0 +1,38 @@
+# Migration PoC Generator — Demo Script (~10 minutes)
+
+## Prerequisites
+
+- `agentic dev up` for this agent
+- `./scripts/seed-postgres-demo.sh` (Postgres on port **5433**)
+- `.env` with `OPENAI_API_KEY`, `POSTGRES_URI`, and `MONGODB_URI` (local dev Mongo from agentic or Atlas `commerce_poc`)
+
+## Test discovery transcript input (Playground)
+
+1. Open `demo/playground-sample-payload.json` and copy the full JSON object.
+2. In Playground, click **+** → **Add extra arguments**, paste the JSON, and **Attach**.
+3. Send: `Score discovery completeness from my attached transcript.`
+4. Confirm the agent reports completeness ≥ 0.8 for the Acme Retail sample.
+
+(If your build shows a **Discovery call transcript** field, it is pre-filled from
+`demo/discovery_transcript.md` via `agent.yaml` → `playground.inputs`.)
+
+## Steps
+
+| Step | Action | Audience sees |
+|------|--------|----------------|
+| 1 | Run seed script | 5 tables, ~25k rows |
+| 2 | Playground: “Run the bundled e-commerce migration PoC” | Discovery + DDL loaded |
+| 3 | Agent scores discovery, proposes schema | Completeness score, embed rationale |
+| 4 | Approve HITL gates (discovery → schema → execution) | Review panels |
+| 5 | Migration + validation tools run | Pass/fail reconciliation |
+| 6 | Atlas Data Explorer / Compass | `orders` with `line_items[]`, separate `payments` |
+
+## Fallback (no LLM)
+
+```bash
+uv run migration-run --skip-llm
+```
+
+## Narrative
+
+*“We had a discovery call Friday. By Monday we had a validated 5-table PoC in Atlas.”*

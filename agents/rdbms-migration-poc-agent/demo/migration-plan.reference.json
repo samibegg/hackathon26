@@ -1,0 +1,66 @@
+{
+  "version": "1.0",
+  "scenario": "ecommerce_order_management",
+  "source": {
+    "dialect": "postgresql",
+    "database": "commerce_demo"
+  },
+  "target": {
+    "database": "commerce_poc"
+  },
+  "collections": [
+    {
+      "name": "customers",
+      "source_table": "customers",
+      "pattern": "one_to_one",
+      "primary_key": "customer_id",
+      "indexes": [{ "keys": { "email": 1 }, "unique": true }]
+    },
+    {
+      "name": "products",
+      "source_table": "products",
+      "pattern": "one_to_one",
+      "primary_key": "product_id",
+      "indexes": [{ "keys": { "sku": 1 }, "unique": true }]
+    },
+    {
+      "name": "orders",
+      "source_table": "orders",
+      "pattern": "bucket_embed",
+      "primary_key": "order_id",
+      "embedded_children": [
+        {
+          "source_table": "order_items",
+          "foreign_key": "order_id",
+          "array_field": "line_items",
+          "exclude_columns": ["order_id"]
+        }
+      ],
+      "indexes": [{ "keys": { "customer_id": 1, "order_date": -1 } }]
+    },
+    {
+      "name": "payments",
+      "source_table": "payments",
+      "pattern": "one_to_one",
+      "primary_key": "payment_id",
+      "indexes": [{ "keys": { "order_id": 1, "paid_at": -1 } }]
+    }
+  ],
+  "field_mappings": [
+    { "source": "customers.customer_id", "target": "customers.customer_id" },
+    { "source": "customers.email", "target": "customers.email" },
+    { "source": "products.product_id", "target": "products.product_id" },
+    { "source": "orders.order_id", "target": "orders.order_id" },
+    { "source": "order_items.*", "target": "orders.line_items[]" },
+    { "source": "payments.payment_id", "target": "payments.payment_id" }
+  ],
+  "validation": {
+    "row_count_tables": ["customers", "products", "orders", "payments"],
+    "embedded_integrity": {
+      "parent_collection": "orders",
+      "child_table": "order_items",
+      "array_field": "line_items",
+      "parent_key": "order_id"
+    }
+  }
+}

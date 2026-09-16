@@ -1,0 +1,48 @@
+name: rdbms-migration-poc-agent
+entrypoint: agent_rdbms_migration_poc.main:app
+framework: langgraph
+features:
+    durable_workflow: true
+    guardrails: false
+    memory: false
+sandboxes:
+    agent:
+        secrets: ["*"]
+        tools:
+            - approve_discovery_completeness
+            - approve_target_schema
+            - approve_migration_execution
+    tool:
+        secrets: ["*"]
+        tools:
+            - check_postgres_connection
+            - list_ddl_examples
+            - get_example_postgres_ddl
+            - load_ddl_example
+            - load_simple_three_table_for_modeling
+            - load_bundled_demo_inputs
+            - prepare_ecommerce_mvp_for_migration
+            - parse_postgres_ddl
+            - build_source_inventory
+            - score_discovery_completeness
+            - propose_target_schema_design
+            - generate_migration_plan
+            - get_session_artifacts
+            - execute_migration_pipeline
+            - run_validation_checks
+version: 0.1.0
+required_secrets:
+    aer:
+        - OPENAI_API_KEY
+    tools:
+        invoke_llm:
+            - OPENAI_API_KEY
+network:
+    egress_mode: allow_all
+
+playground:
+  inputs:
+    - id: discovery_transcript
+      type: transcript
+      label: Discovery call transcript
+      sample_file: demo/discovery_transcript.md
