@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from agent_rdbms_migration_poc.hitl import normalize_hitl_answer
+from agent_rdbms_migration_poc.hitl import format_discovery_review_prompt, normalize_hitl_answer
 
 
 def test_natural_language_approved() -> None:
@@ -32,3 +32,14 @@ def test_legacy_json_string() -> None:
 def test_empty_raises() -> None:
     with pytest.raises(ValueError):
         normalize_hitl_answer("   ")
+
+
+def test_discovery_prompt_is_markdown_not_json_schema() -> None:
+    text = format_discovery_review_prompt(
+        summary="All ten areas covered.",
+        completeness_score=1.0,
+        gaps="None.",
+    )
+    assert "## Discovery review" in text
+    assert "response_schema" not in text
+    assert "Approved" in text

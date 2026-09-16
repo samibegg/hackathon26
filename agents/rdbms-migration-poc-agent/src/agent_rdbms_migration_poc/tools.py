@@ -25,7 +25,12 @@ from agent_rdbms_migration_poc.migration.plan import (
     load_plan,
 )
 from agent_rdbms_migration_poc.migration.postgres_conn import check_postgres, resolve_postgres_uri
-from agent_rdbms_migration_poc.hitl import NATURAL_LANGUAGE_RESPONSE_SCHEMA, normalize_hitl_answer
+from agent_rdbms_migration_poc.hitl import (
+    format_discovery_review_prompt,
+    format_execution_review_prompt,
+    format_schema_review_prompt,
+    normalize_hitl_answer,
+)
 from agent_rdbms_migration_poc.migration.runner import run_migration, run_validation
 from agent_rdbms_migration_poc.workspace import (
     get_artifact,
@@ -37,10 +42,9 @@ from agent_rdbms_migration_poc.workspace import (
 DEMO_TABLES = frozenset({"customers", "products", "orders", "order_items", "payments"})
 
 
-def _await_hitl_approval(payload: dict[str, Any]) -> dict[str, str]:
-    """Suspend for architect input; accept plain text or legacy JSON object answers."""
-    payload = {**payload, "response_schema": NATURAL_LANGUAGE_RESPONSE_SCHEMA}
-    raw = interrupt(payload)
+def _await_hitl_approval(prompt: str) -> dict[str, str]:
+    """Suspend for architect input; Playground shows ``prompt`` as markdown/text."""
+    raw = interrupt(prompt)
     try:
         return normalize_hitl_answer(raw)
     except ValueError as err:
@@ -390,13 +394,11 @@ def register(app: App) -> None:
     ) -> str:
         """HITL gate 1: architect confirms discovery extraction or records gaps."""
         answer = _await_hitl_approval(
-            {
-                "action": "review_discovery",
-                "summary": summary,
-                "completeness_score": completeness_score,
-                "gaps": gaps,
-                "message": "Approve discovery intake before schema design?",
-            }
+            format_discovery_review_prompt(
+                summary=summary,
+                completeness_score=completeness_score,
+                gaps=gaps,
+            )
         )
         put_artifact("hitl_discovery", answer)
         return json.dumps(answer, indent=2)
@@ -408,12 +410,10 @@ def register(app: App) -> None:
     ) -> str:
         """HITL gate 2: architect signs off on target document model and mapping."""
         answer = _await_hitl_approval(
-            {
-                "action": "review_schema",
-                "schema_summary": schema_summary,
-                "embedding_rationale": embedding_rationale,
-                "message": "Approve target schema and field mapping?",
-            }
+            format_schema_review_prompt(
+                schema_summary=schema_summary,
+                embedding_rationale=embedding_rationale,
+            )
         )
         put_artifact("hitl_schema", answer)
         if answer.get("decision") != "approved":
@@ -428,13 +428,11 @@ def register(app: App) -> None:
     ) -> str:
         """HITL gate 3: authorize migration run against Atlas."""
         answer = _await_hitl_approval(
-            {
-                "action": "authorize_execution",
-                "target_database": target_database,
-                "postgres_uri_hint": postgres_uri_hint,
-                "risk_summary": risk_summary,
-                "message": "Authorize migration execution?",
-            }
+            format_execution_review_prompt(
+                target_database=target_database,
+                postgres_uri_hint=postgres_uri_hint,
+                risk_summary=risk_summary,
+            )
         )
         put_artifact("hitl_execution", answer)
         return json.dumps(answer, indent=2)

@@ -6,14 +6,12 @@ import json
 import re
 from typing import Any
 
-# Playground renders a single text field when the interrupt uses a string schema.
-NATURAL_LANGUAGE_RESPONSE_SCHEMA: dict[str, Any] = {
-    "type": "string",
-    "description": (
-        "Approve or reject in plain language, e.g. "
-        "'Approved — proceed to schema design' or 'Rejected — need Postgres row counts first'."
-    ),
-}
+# Playground JSON-stringifies dict interrupt values (including response_schema).
+# Use markdown strings for interrupt() so architects see a review brief, not raw JSON.
+HITL_REPLY_HINT = (
+    "Reply below with **Approved** or **Rejected** and any notes "
+    "(plain language is fine)."
+)
 
 _REJECT_PATTERNS = re.compile(
     r"\b(reject(?:ed|ion)?|deny|denied|no|stop|block(?:ed)?)\b",
@@ -67,3 +65,50 @@ def _from_text(text: str) -> dict[str, str]:
         return {"decision": "approved", "reviewer_notes": text}
     # Default: treat non-empty reply as approval so demos can proceed with "looks good".
     return {"decision": "approved", "reviewer_notes": text}
+
+
+def format_discovery_review_prompt(
+    *,
+    summary: str,
+    completeness_score: float,
+    gaps: str,
+) -> str:
+    return (
+        "## Discovery review (gate 1 of 3)\n\n"
+        f"**Completeness score:** {completeness_score:.2f}\n\n"
+        "### Summary\n\n"
+        f"{summary.strip()}\n\n"
+        "### Gaps / follow-ups\n\n"
+        f"{(gaps or 'None noted.').strip()}\n\n"
+        "**Question:** Approve discovery intake before schema design?\n\n"
+        f"{HITL_REPLY_HINT}"
+    )
+
+
+def format_schema_review_prompt(*, schema_summary: str, embedding_rationale: str) -> str:
+    return (
+        "## Target schema review (gate 2 of 3)\n\n"
+        "### Proposed model\n\n"
+        f"{schema_summary.strip()}\n\n"
+        "### Embedding rationale\n\n"
+        f"{embedding_rationale.strip()}\n\n"
+        "**Question:** Approve target schema and field mapping?\n\n"
+        f"{HITL_REPLY_HINT}"
+    )
+
+
+def format_execution_review_prompt(
+    *,
+    target_database: str,
+    postgres_uri_hint: str,
+    risk_summary: str,
+) -> str:
+    return (
+        "## Migration execution (gate 3 of 3)\n\n"
+        f"**Target database:** `{target_database}`\n\n"
+        f"**Postgres source:** {postgres_uri_hint.strip()}\n\n"
+        "### Risks\n\n"
+        f"{risk_summary.strip()}\n\n"
+        "**Question:** Authorize migration execution against MongoDB?\n\n"
+        f"{HITL_REPLY_HINT}"
+    )
