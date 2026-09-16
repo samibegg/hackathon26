@@ -2,6 +2,8 @@
 
 Migration PoC Generator — turns a **discovery transcript** and **PostgreSQL DDL** into a **deterministic migration** and **validation report** for MongoDB Atlas.
 
+Project **vision, current state, phased plan, and TODO backlog** live in the [repo root README](../../README.md).
+
 ## Quick start
 
 ```bash
