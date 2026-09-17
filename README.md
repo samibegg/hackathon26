@@ -44,16 +44,29 @@ What works today in `agents/rdbms-migration-poc-agent/`:
 | CI / golden migration tests | Not started | Unit tests in agent; no GitHub Actions |
 | Skills + procedural memory | Not started | Spec Phase 4 |
 
-**Architecture (MVP):** one **Migration Orchestrator** (LLM + LangGraph) delegates to **deterministic tools** named for Discovery Extractor, Source Modeler, Target Designer, Pipeline Architect, PoC Builder, and Validation — not separate agent runtimes yet.
+**Architecture (demo):** one **Migration Orchestrator** (LLM + LangGraph) delegates to **deterministic tools** named for six specialist roles — not separate deployable agents. Production may split intake vs build; see [`docs/PRODUCTION_MULTI_AGENT.md`](docs/PRODUCTION_MULTI_AGENT.md).
+
+---
+
+## Demo vs production
+
+| | Demo (run this) | Production (documented only) |
+|--|-----------------|------------------------------|
+| Agent folder | `agents/rdbms-migration-poc-agent/` | `migration-intake-agent` + `migration-build-agent` |
+| Playgrounds | One (`agentic dev up`) | Two or orchestrator + workers |
+| Docs | [`DEMO.md`](agents/rdbms-migration-poc-agent/DEMO.md), [`architecture.md`](docs/architecture.md) | [`PRODUCTION_MULTI_AGENT.md`](docs/PRODUCTION_MULTI_AGENT.md) |
 
 ---
 
 ## Layout
 
 - `project-config.yaml` — project-level memory settings (platform)
-- `agents/rdbms-migration-poc-agent/` — runnable agent (`agentic dev up` from that directory)
+- [`docs/architecture.md`](docs/architecture.md) — demo orchestrator, MongoDB state, env vars
+- [`docs/PRODUCTION_MULTI_AGENT.md`](docs/PRODUCTION_MULTI_AGENT.md) — two-agent production reference
+- `packages/migration-core/` — shared runner, workspace, HITL (for prod agents; demo uses inline code)
+- `agents/rdbms-migration-poc-agent/` — **demo agent** (`agentic dev up`)
 
-Agent docs: [`agents/rdbms-migration-poc-agent/README.md`](agents/rdbms-migration-poc-agent/README.md) (quick start), [`DEMO.md`](agents/rdbms-migration-poc-agent/DEMO.md) (~10 min live demo).
+Agent docs: [`agents/rdbms-migration-poc-agent/README.md`](agents/rdbms-migration-poc-agent/README.md), [`DEMO.md`](agents/rdbms-migration-poc-agent/DEMO.md).
 
 ---
 
@@ -61,7 +74,7 @@ Agent docs: [`agents/rdbms-migration-poc-agent/README.md`](agents/rdbms-migratio
 
 ```bash
 cd agents/rdbms-migration-poc-agent
-cp env.example .env   # OPENAI_API_KEY, POSTGRES_URI, MONGODB_URI
+cp env.example .env   # secrets live here — see docs/architecture.md (MONGODB_URI, etc.)
 
 ./scripts/seed-postgres-demo.sh   # optional: Postgres on localhost:5433
 agentic dev up                    # Playground http://localhost:3000
@@ -111,6 +124,7 @@ Prioritized next work — no code committed for these until picked up:
 
 ### P2 — Quality and reuse
 
+- [ ] **LangGraph subgraphs or tool groups** for clearer specialist phases without second Playground (optional UX polish on demo agent).
 - [ ] **GitHub Actions:** `uv sync`, unit tests; optional Postgres service job.
 - [ ] **Integration/golden tests:** validation fixtures; headless migration smoke (with secrets in CI or skipped).
 - [ ] **Skills** extracted per spec (Postgres inventory, MongoDB schema design, migration validation).
@@ -120,7 +134,7 @@ Prioritized next work — no code committed for these until picked up:
 ### Decisions (track here)
 
 - [ ] Confirm **final repo home** (hackathon26 only vs PR to `magenta-examples`).
-- [ ] Confirm **multi-agent UI** requirement (separate subagents vs orchestrator + tools).
+- [x] **Multi-agent UI:** demo stays **one Playground** (orchestrator + tools); production split documented in [`docs/PRODUCTION_MULTI_AGENT.md`](docs/PRODUCTION_MULTI_AGENT.md).
 - [ ] Confirm **discovery depth** for MVP (keyword gate + template intake vs LLM extraction to JSON).
 - [ ] Confirm **demo target Mongo** (local `agentic dev` vs Atlas-only).
 

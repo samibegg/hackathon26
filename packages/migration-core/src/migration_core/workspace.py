@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import json
 import os
+import uuid
 from functools import lru_cache
 from pathlib import Path
 from typing import Any, Literal
@@ -29,6 +30,37 @@ _WORKSPACE_COLLECTION = "migration_workspace"
 def session_key() -> str:
     sid = get_current_session_id()
     return sid if sid else "default"
+
+
+def engagement_key() -> str:
+    """Workspace document id — shared across intake and build agents."""
+    payload = get_current_payload() or {}
+    for key in ("engagement_id", "session_id"):
+        value = payload.get(key)
+        if isinstance(value, str) and value.strip():
+            return value.strip()
+    env_id = os.environ.get("ENGAGEMENT_ID", "").strip()
+    if env_id:
+        return env_id
+    stored = _load_raw_key_from_current_doc_only()
+    if stored:
+        return stored
+    return session_key()
+
+
+def _load_raw_key_from_current_doc_only() -> str:
+    """Avoid recursion: read engagement_id from file workspace only when using session file."""
+    if resolve_state_mongodb_uri():
+        return ""
+    path = _workspace_dir() / f"{session_key()}.mws"
+    if not path.is_file():
+        return ""
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return ""
+    eid = data.get("engagement_id")
+    return str(eid).strip() if eid else ""
 
 
 def workspace_backend() -> Literal["mongodb", "file"]:
@@ -56,7 +88,7 @@ def _workspace_dir() -> Path:
 
 
 def _workspace_file() -> Path:
-    return _workspace_dir() / f"{session_key()}.mws"
+    return _workspace_dir() / f"{engagement_key()}.mws"
 
 
 def _load_file() -> dict[str, Any]:
@@ -83,7 +115,7 @@ def _mongo_client():  # noqa: ANN202 — lazy singleton for dev
 def _load_mongo() -> dict[str, Any]:
     client = _mongo_client()
     coll = client[state_database_name()][_WORKSPACE_COLLECTION]
-    doc = coll.find_one({"_id": session_key()})
+    doc = coll.find_one({"_id": engagement_key()})
     if not doc:
         return {}
     return {k: v for k, v in doc.items() if k != "_id"}
@@ -92,7 +124,7 @@ def _load_mongo() -> dict[str, Any]:
 def _save_mongo(data: dict[str, Any]) -> None:
     client = _mongo_client()
     coll = client[state_database_name()][_WORKSPACE_COLLECTION]
-    coll.replace_one({"_id": session_key()}, {"_id": session_key(), **data}, upsert=True)
+    coll.replace_one({"_id": engagement_key()}, {"_id": engagement_key(), **data}, upsert=True)
 
 
 def _load() -> dict[str, Any]:
@@ -120,6 +152,17 @@ def put_artifact(name: str, value: Any) -> None:
 
 def get_artifact(name: str, default: Any = None) -> Any:
     return _load().get(name, default)
+
+
+def ensure_engagement_id() -> str:
+    """Stable id for MongoDB workspace handoff between intake and build agents."""
+    existing = get_artifact("engagement_id")
+    if existing:
+        return str(existing)
+    sid = session_key()
+    eid = sid if sid and sid != "default" else str(uuid.uuid4())
+    put_artifact("engagement_id", eid)
+    return eid
 
 
 def resolve_discovery_transcript(explicit: str = "") -> str:
