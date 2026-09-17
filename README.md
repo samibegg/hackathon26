@@ -32,15 +32,19 @@ What works today in `agents/rdbms-migration-poc-agent/`:
 | Demo Postgres + seed (~25k rows) | Done | `docker-compose.postgres.yml`, `scripts/seed-postgres-demo.sh` |
 | Deterministic Postgres → Mongo runner | Done | Embed logic, indexes, `migration-run --skip-llm` |
 | Reference `migration-plan.json` | Done | `demo/migration-plan.reference.json` |
-| Discovery 10-area keyword scorer | Done | Gate at 0.8 in scorer; not fully enforced in tools |
-| DDL parser + source inventory | Done | Lightweight parser; FK references |
+| Discovery 10-area keyword scorer | Done | `ready_for_poc` at 0.8 in scorer; not enforced in plan/migrate tools |
+| DDL parser + source inventory | Done | Lightweight parser; FK references; optional live row counts |
 | Canonical target schema + embed rationale | Done | Bundled e-commerce + `simple_three_table` workshop |
 | LangGraph orchestrator + tools | Done | Six “specialist” roles via tools (single runtime) |
-| HITL interrupts (3 gates) | Partial | Execution gate enforced in code; discovery/schema rely on prompt |
-| Playground transcript input | Partial | `agent.yaml` input + `playground-sample-payload.json` |
+| Session workspace (file or MongoDB) | Done | `MIGRATION_STATE_MONGODB_URI` + file fallback; see `workspace.py` |
+| Postgres pre-flight | Done | `check_postgres_connection` |
+| HITL interrupts (3 gates) | Partial | Gate 3 enforced before `execute_migration_pipeline`; gates 1–2 interrupt + artifacts but not checked on downstream tools |
+| HITL Playground UX | Done | Markdown review briefs; plain-language approve/reject |
+| Playground transcript input | Done | `agent.yaml` transcript field + `playground-sample-payload.json` extra args |
 | Playground artifact panels | Not started | Session JSON via `get_session_artifacts` only |
+| Operator / architecture docs | Done | `docs/DEMO_ENVIRONMENT.md`, `architecture.md`, demo script |
 | Structured LLM discovery intake | Not started | Keyword score only |
-| Plan synthesis from inventory | Partial | Demo loads **reference plan** when 5 tables match |
+| Plan synthesis from inventory | Partial | Loads **reference plan** when 5-table inventory matches; not derived from approved design |
 | CI / golden migration tests | Not started | Unit tests in agent; no GitHub Actions |
 | Skills + procedural memory | Not started | Spec Phase 4 |
 
@@ -77,7 +81,7 @@ Agent docs: [`agents/rdbms-migration-poc-agent/README.md`](agents/rdbms-migratio
 cd agents/rdbms-migration-poc-agent
 cp env.example .env   # Postgres + Mongo target — see docs/DEMO_ENVIRONMENT.md
 
-./scripts/seed-postgres-demo.sh   # optional: Postgres on localhost:5433
+./scripts/seed-postgres-demo.sh   # required for full migrate + validate (Postgres :5433)
 agentic dev up                    # Playground http://localhost:3000
 ```
 
@@ -98,10 +102,10 @@ Aligned with the MVP proposal (~2 weeks to demo-ready):
 
 | Phase | Focus | Repo status |
 |-------|--------|-------------|
-| **1** | Postgres bundle + deterministic runner | **Largely complete** |
+| **1** | Postgres bundle + deterministic runner | **Complete** (bundled e-commerce demo) |
 | **2** | Discovery + design in Playground (artifacts, intake, plan builder) | **In progress** |
-| **3** | HITL enforcement + full Playground demo hardening | **Partial** |
-| **4** | Skills, procedural memory, CI, docs, upstream to `magenta-examples` | **Not started** |
+| **3** | HITL enforcement + full Playground demo hardening | **Partial** (execution gate in code; gates 1–2 prompt + interrupts) |
+| **4** | Skills, procedural memory, CI, upstream to `magenta-examples` | **Partial** — operator/architecture docs done; CI, skills, upstream not started |
 
 ---
 
@@ -137,7 +141,7 @@ Prioritized next work — no code committed for these until picked up:
 - [ ] Confirm **final repo home** (hackathon26 only vs PR to `magenta-examples`).
 - [x] **Multi-agent UI:** demo stays **one Playground** (orchestrator + tools); production split documented in [`docs/PRODUCTION_MULTI_AGENT.md`](docs/PRODUCTION_MULTI_AGENT.md).
 - [ ] Confirm **discovery depth** for MVP (keyword gate + template intake vs LLM extraction to JSON).
-- [ ] Confirm **demo target Mongo** (local `agentic dev` vs Atlas-only).
+- [x] **Demo target Mongo:** local dev stack Mongo **or** Atlas via `.env` (`MIGRATION_TARGET_DB`, e.g. `commercedb`) — [`docs/DEMO_ENVIRONMENT.md`](docs/DEMO_ENVIRONMENT.md).
 
 ---
 
@@ -146,7 +150,7 @@ Prioritized next work — no code committed for these until picked up:
 A Technical Architect can:
 
 1. Run `scripts/seed-postgres-demo.sh` and `agentic dev up`
-2. Paste the bundled discovery transcript and load DDL in Playground
+2. Use the bundled discovery transcript (Playground input or extra args) and load DDL in Playground
 3. Review and approve target schema at HITL gates
 4. Execute migration and see all five source tables represented in MongoDB (four collections + embedded line items)
 5. Review a validation report (row counts + embedded integrity)
@@ -157,6 +161,6 @@ A Technical Architect can:
 ## Prerequisites
 
 - LLM API key (`OPENAI_API_KEY`; Grove `OPENAI_BASE_URL` optional)
-- MongoDB target (`MONGODB_URI` — local dev from `agentic dev` or Atlas `commerce_poc`)
+- MongoDB target — unset `MONGODB_URI` for local dev stack Mongo, or Atlas + `MIGRATION_TARGET_DB` (see [`docs/DEMO_ENVIRONMENT.md`](docs/DEMO_ENVIRONMENT.md))
 - Docker (demo Postgres)
 - [`uv`](https://docs.astral.sh/uv/) for Python deps and tests
