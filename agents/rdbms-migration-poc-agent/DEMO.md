@@ -3,8 +3,8 @@
 ## Prerequisites
 
 - `agentic dev up` for this agent
-- `./scripts/seed-postgres-demo.sh` (Postgres on port **5433**)
-- `.env` with `OPENAI_API_KEY`, `POSTGRES_URI`, and `MONGODB_URI` (local dev Mongo from agentic or Atlas `commerce_poc`)
+- `./scripts/seed-postgres-demo.sh` (Postgres on port **5433** — no local `psql` needed)
+- `.env`: `OPENAI_API_KEY`, `POSTGRES_URI` (`host.docker.internal:5433` from Docker), and Mongo target — see **[`docs/DEMO_ENVIRONMENT.md`](../../docs/DEMO_ENVIRONMENT.md)** (local dev Mongo vs Atlas + `MIGRATION_TARGET_DB`)
 
 ## Test discovery transcript input (Playground)
 
@@ -50,3 +50,7 @@ If you see `workflow is nondeterministic: step 2 committed with different state`
 After changing `agent.yaml`, restart local dev: `agentic dev down && agentic dev up`.
 
 **HITL answers:** plain language is enough (`Approved — proceed to schema design`). Include “reject” if you want to block the step.
+
+## Troubleshooting data in Mongo / Compass
+
+See **[`docs/DEMO_ENVIRONMENT.md`](../../docs/DEMO_ENVIRONMENT.md)** — wrong cluster, wrong database name (`MIGRATION_TARGET_DB` vs `commerce_poc`), local Mongo port, and Atlas network access.

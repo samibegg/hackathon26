@@ -61,6 +61,7 @@ What works today in `agents/rdbms-migration-poc-agent/`:
 ## Layout
 
 - `project-config.yaml` — project-level memory settings (platform)
+- [`docs/DEMO_ENVIRONMENT.md`](docs/DEMO_ENVIRONMENT.md) — Postgres seed, Atlas vs local Mongo, Compass
 - [`docs/architecture.md`](docs/architecture.md) — demo orchestrator, MongoDB state, env vars
 - [`docs/PRODUCTION_MULTI_AGENT.md`](docs/PRODUCTION_MULTI_AGENT.md) — two-agent production reference
 - `packages/migration-core/` — shared runner, workspace, HITL (for prod agents; demo uses inline code)
@@ -74,7 +75,7 @@ Agent docs: [`agents/rdbms-migration-poc-agent/README.md`](agents/rdbms-migratio
 
 ```bash
 cd agents/rdbms-migration-poc-agent
-cp env.example .env   # secrets live here — see docs/architecture.md (MONGODB_URI, etc.)
+cp env.example .env   # Postgres + Mongo target — see docs/DEMO_ENVIRONMENT.md
 
 ./scripts/seed-postgres-demo.sh   # optional: Postgres on localhost:5433
 agentic dev up                    # Playground http://localhost:3000

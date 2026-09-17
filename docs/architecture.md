@@ -232,6 +232,7 @@ Human gates use LangGraph **`interrupt()`** in **`approve_*`** tools (agent sand
 ## Related docs
 
 - [Root README](../README.md) — vision, phases, TODOs
+- [DEMO_ENVIRONMENT.md](DEMO_ENVIRONMENT.md) — Postgres seed, Atlas target DB, Compass troubleshooting
 - [Demo agent README](../agents/rdbms-migration-poc-agent/README.md) — quick start
 - [DEMO.md](../agents/rdbms-migration-poc-agent/DEMO.md) — live demo script
 - [PRODUCTION_MULTI_AGENT.md](PRODUCTION_MULTI_AGENT.md) — two-agent production reference
