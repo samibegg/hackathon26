@@ -102,10 +102,14 @@ def format_execution_review_prompt(
     target_database: str,
     postgres_uri_hint: str,
     risk_summary: str,
+    mongo_uri_kind: str = "",
 ) -> str:
+    target_line = f"**Target database:** `{target_database}`"
+    if mongo_uri_kind:
+        target_line += f" on **{mongo_uri_kind}**"
     return (
         "## Migration execution (gate 3 of 3)\n\n"
-        f"**Target database:** `{target_database}`\n\n"
+        f"{target_line}\n\n"
         f"**Postgres source:** {postgres_uri_hint.strip()}\n\n"
         "### Risks\n\n"
         f"{risk_summary.strip()}\n\n"

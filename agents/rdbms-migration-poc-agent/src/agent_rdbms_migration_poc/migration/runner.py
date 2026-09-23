@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import os
 from collections import defaultdict
 from decimal import Decimal
 from typing import Any
@@ -10,6 +9,11 @@ from typing import Any
 import psycopg
 from pymongo import MongoClient
 
+from agent_rdbms_migration_poc.migration.mongo_conn import (
+    mongodb_uri_kind,
+    resolve_migration_mongodb_uri,
+    resolve_migration_target_db,
+)
 from agent_rdbms_migration_poc.migration.postgres_conn import resolve_postgres_uri
 
 
@@ -39,18 +43,25 @@ def _apply_indexes(collection, index_specs: list[dict]) -> None:
 
 def run_migration(plan: dict[str, Any]) -> dict[str, Any]:
     postgres_uri = resolve_postgres_uri()
-    mongo_uri = os.environ.get("MONGODB_URI", "").strip()
-    target_db = os.environ.get(
-        "MIGRATION_TARGET_DB",
+    mongo_uri = resolve_migration_mongodb_uri()
+    target_db = resolve_migration_target_db(
         plan.get("target", {}).get("database", "commerce_poc"),
     )
 
     if not postgres_uri:
         raise RuntimeError("POSTGRES_URI is required for migration execution")
     if not mongo_uri:
-        raise RuntimeError("MONGODB_URI is required for migration execution")
+        raise RuntimeError(
+            "Migration MongoDB URI required — set MONGODB_URI (Atlas) in .env "
+            "or MIGRATION_TARGET_MONGODB_URI"
+        )
 
-    stats: dict[str, Any] = {"collections_written": {}, "indexes_created": []}
+    stats: dict[str, Any] = {
+        "collections_written": {},
+        "indexes_created": [],
+        "target_database": target_db,
+        "target_uri_kind": mongodb_uri_kind(mongo_uri),
+    }
 
     with psycopg.connect(postgres_uri) as pg_conn:
         mongo = MongoClient(mongo_uri)
@@ -106,13 +117,12 @@ def run_migration(plan: dict[str, Any]) -> dict[str, Any]:
 
 def run_validation(plan: dict[str, Any]) -> dict[str, Any]:
     postgres_uri = resolve_postgres_uri()
-    mongo_uri = os.environ.get("MONGODB_URI", "").strip()
-    target_db = os.environ.get(
-        "MIGRATION_TARGET_DB",
+    mongo_uri = resolve_migration_mongodb_uri()
+    target_db = resolve_migration_target_db(
         plan.get("target", {}).get("database", "commerce_poc"),
     )
     if not postgres_uri or not mongo_uri:
-        raise RuntimeError("POSTGRES_URI and MONGODB_URI are required for validation")
+        raise RuntimeError("POSTGRES_URI and migration MongoDB URI are required for validation")
 
     checks: list[dict[str, Any]] = []
     passed = True

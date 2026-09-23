@@ -8,5 +8,5 @@ cd "$ROOT"
 "$ROOT/scripts/ensure-postgres-demo.sh"
 
 echo ""
-echo "Starting agentic dev stack ..."
-exec agentic dev up "$@"
+echo "Starting agentengine dev stack ..."
+exec agentengine dev up "$@"

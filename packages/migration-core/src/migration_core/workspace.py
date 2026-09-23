@@ -16,7 +16,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any, Literal
 
-from runner_shared.context import get_current_payload, get_current_session_id
+from agent_engine_runner_shared.context import get_current_payload, get_current_session_id
 
 _PAYLOAD_TRANSCRIPT_KEYS = (
     "discovery_transcript",

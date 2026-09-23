@@ -8,7 +8,7 @@ from typing import Any
 
 import psycopg
 from langgraph.types import interrupt
-from magenta_sdklanggraph import App
+from agent_engine_sdk_langgraph import App
 
 from agent_rdbms_migration_poc.migration.ddl_parser import inventory_from_ddl
 from agent_rdbms_migration_poc.migration.discovery import score_transcript
@@ -23,6 +23,12 @@ from agent_rdbms_migration_poc.migration.plan import (
     canonical_ecommerce_schema_design,
     demo_reference_plan_path,
     load_plan,
+)
+from agent_rdbms_migration_poc.migration.mongo_conn import (
+    check_mongodb,
+    mongodb_uri_kind,
+    resolve_migration_mongodb_uri,
+    resolve_migration_target_db,
 )
 from agent_rdbms_migration_poc.migration.postgres_conn import check_postgres, resolve_postgres_uri
 from agent_rdbms_migration_poc.hitl import (
@@ -138,6 +144,11 @@ def register(app: App) -> None:
     def check_postgres_connection() -> str:
         """Verify demo Postgres is reachable from this runtime (POSTGRES_URI)."""
         return json.dumps(check_postgres(), indent=2)
+
+    @app.tool()
+    def check_mongodb_connection() -> str:
+        """Verify migration target MongoDB (Atlas from .env, or local when no Atlas URI)."""
+        return json.dumps(check_mongodb(), indent=2)
 
     @app.tool()
     def list_ddl_examples() -> str:
@@ -369,7 +380,10 @@ def register(app: App) -> None:
             return json.dumps(
                 {
                     "error": str(exc),
-                    "hint": "Run check_postgres_connection; ensure MONGODB_URI is set in dev.",
+                    "hint": (
+                        "Run check_postgres_connection and check_mongodb_connection; "
+                        "Atlas URI belongs in .env as MONGODB_URI (or MIGRATION_TARGET_MONGODB_URI)."
+                    ),
                 },
                 indent=2,
             )
@@ -422,17 +436,24 @@ def register(app: App) -> None:
 
     @app.tool()
     def approve_migration_execution(
-        target_database: str,
-        postgres_uri_hint: str,
-        risk_summary: str,
+        target_database: str = "",
+        postgres_uri_hint: str = "",
+        risk_summary: str = "",
     ) -> str:
-        """HITL gate 3: authorize migration run against Atlas."""
+        """HITL gate 3: authorize migration run against the configured Mongo target."""
+        resolved_db = resolve_migration_target_db(target_database or "commerce_poc")
+        uri_kind = mongodb_uri_kind(resolve_migration_mongodb_uri())
+        hint = postgres_uri_hint.strip() or (
+            "POSTGRES_URI configured for commerce_demo; use host.docker.internal:5433 from Docker"
+        )
         answer = _await_hitl_approval(
             format_execution_review_prompt(
-                target_database=target_database,
-                postgres_uri_hint=postgres_uri_hint,
-                risk_summary=risk_summary,
+                target_database=resolved_db,
+                postgres_uri_hint=hint,
+                risk_summary=risk_summary
+                or "Deterministic bulk load into MIGRATION_TARGET_DB; confirm Atlas/network access.",
+                mongo_uri_kind=uri_kind,
             )
         )
         put_artifact("hitl_execution", answer)
-        return json.dumps(answer, indent=2)
+        return json.dumps({**answer, "target_database": resolved_db, "target_uri_kind": uri_kind}, indent=2)

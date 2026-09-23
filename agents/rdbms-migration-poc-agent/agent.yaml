@@ -18,6 +18,7 @@ sandboxes:
         secrets: ["*"]
         tools:
             - check_postgres_connection
+            - check_mongodb_connection
             - list_ddl_examples
             - get_example_postgres_ddl
             - load_ddl_example

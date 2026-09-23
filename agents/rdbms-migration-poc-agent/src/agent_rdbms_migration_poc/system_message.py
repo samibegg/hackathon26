@@ -69,7 +69,7 @@ Before migration, call `check_postgres_connection` if row counts fail — seed P
 ## Environment
 
 - `POSTGRES_URI` — source (demo: postgresql://commerce:commerce@localhost:5433/commerce_demo)
-- `MONGODB_URI` — Atlas or local dev Mongo from `agentic dev`
+- `MONGODB_URI` — Atlas or local dev Mongo from `agentengine dev`
 - `MIGRATION_TARGET_DB` — default `commerce_poc`
 
 Be concise, evidence-linked (cite transcript + DDL), and explicit about embed/reference decisions.

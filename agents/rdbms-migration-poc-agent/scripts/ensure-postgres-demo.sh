@@ -34,7 +34,7 @@ if [[ "${DEMO_POSTGRES_FORCE_RESEED:-}" == "1" ]]; then
 elif _is_seeded; then
   echo "Demo PostgreSQL already seeded."
   _print_row_counts
-  echo "POSTGRES_URI (agentic dev): postgresql://commerce:commerce@host.docker.internal:5433/commerce_demo"
+  echo "POSTGRES_URI (agentengine dev): postgresql://commerce:commerce@host.docker.internal:5433/commerce_demo"
   exit 0
 fi
 
@@ -45,4 +45,4 @@ echo "Loading seed data (this may take a minute) ..."
 "${PSQL[@]}" < demo/seed.sql
 
 _print_row_counts
-echo "POSTGRES_URI (agentic dev): postgresql://commerce:commerce@host.docker.internal:5433/commerce_demo"
+echo "POSTGRES_URI (agentengine dev): postgresql://commerce:commerce@host.docker.internal:5433/commerce_demo"

@@ -15,7 +15,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any, Literal
 
-from runner_shared.context import get_current_payload, get_current_session_id
+from agent_engine_runner_shared.context import get_current_payload, get_current_session_id
 
 _PAYLOAD_TRANSCRIPT_KEYS = (
     "discovery_transcript",
@@ -50,7 +50,7 @@ def state_database_name() -> str:
 
 
 def _workspace_dir() -> Path:
-    root = Path(os.environ.get("MIGRATION_WORKSPACE_DIR", ".agentic/migration-sessions"))
+    root = Path(os.environ.get("MIGRATION_WORKSPACE_DIR", ".agentengine/migration-sessions"))
     root.mkdir(parents=True, exist_ok=True)
     return root
 

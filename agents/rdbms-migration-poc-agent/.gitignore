@@ -1,6 +1,9 @@
-.agentic/
+.agentengine/
 docker-compose.yml
 .dockerignore
+
+# Local CLI download (install via agentengine release, do not commit)
+agentengine_*_*_*
 
 .env
 .devcontainer/
@@ -19,4 +22,4 @@ htmlcov/
 .DS_Store
 .env.*
 .migration_workspace/
-.agentic/migration-sessions/
+.agentengine/migration-sessions/

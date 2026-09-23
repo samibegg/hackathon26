@@ -11,7 +11,7 @@ from langchain_core.messages import SystemMessage
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.state import CompiledStateGraph
 from langgraph.prebuilt import ToolNode
-from magenta_sdklanggraph import App
+from agent_engine_sdk_langgraph import App
 
 from agent_rdbms_migration_poc.llm import build_llm
 from agent_rdbms_migration_poc.state import MigrationState

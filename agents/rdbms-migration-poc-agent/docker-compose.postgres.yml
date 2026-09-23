@@ -1,4 +1,4 @@
-# Demo source DB — merged into `agentic dev up` via COMPOSE_FILE (see env.example).
+# Demo source DB — merged into `agentengine dev up` via COMPOSE_FILE (see env.example).
 # Standalone: docker compose -p rdbms-migration-poc-postgres -f docker-compose.postgres.yml up -d
 
 services:

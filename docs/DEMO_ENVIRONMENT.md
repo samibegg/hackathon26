@@ -78,28 +78,23 @@ docker port rdbms-migration-poc-agent-mongodb-1 27017
 
 Port changes when you `agentic dev down && agentic dev up`.
 
-### Option B — MongoDB Atlas (field demo)
+### Option B — MongoDB Atlas via Playground (field demo)
 
 Set in **`agents/rdbms-migration-poc-agent/.env`**:
 
 ```bash
 MONGODB_URI=mongodb+srv://USER:PASS@cluster.mongodb.net/
-MIGRATION_TARGET_DB=commercedb
+MIGRATION_TARGET_DB=commerce_poc   # or commercedb — must match Atlas DB name you open
 ```
 
-- **`MIGRATION_TARGET_DB`** overrides the reference plan’s `commerce_poc` name — data lands in **`commercedb`** (or whatever you set).
-- **Atlas Network Access** must allow connections from the **tool container** (migration runs in the tool sandbox). For hackathons, a temporary `0.0.0.0/0` or your VPN egress pattern is common.
+- **`agentengine` injects local Mongo** for the platform checkpointer and protects process `MONGODB_URI`. The **migration runner** still reads Atlas from this **`.env` file** when `MONGODB_URI` is `mongodb+srv` / `*.mongodb.net` (or set `MIGRATION_TARGET_MONGODB_URI` explicitly).
+- **`MIGRATION_TARGET_DB`** is the database name for loaded PoC data.
+- **Atlas Network Access** must allow the **tool container** egress (often `0.0.0.0/0` for hackathons).
 - Database user needs **readWrite** on the target database.
 
-After changing `.env`:
+After changing `.env`, restart if needed, then in Playground call **`check_mongodb_connection`** — expect `"uri_kind": "atlas"`. Re-run gate 3 + migrate; prior local-docker loads do **not** copy to Atlas.
 
-```bash
-agentic dev down && agentic dev up
-```
-
-Re-run migration (gate 3 + `execute_migration_pipeline`). An earlier run with local Mongo did **not** copy data to Atlas.
-
-**Compass / Data Explorer:** connect to the **same cluster** as `MONGODB_URI`, open database **`MIGRATION_TARGET_DB`**, collections `customers`, `products`, `orders`, `payments`.
+**Compass / Data Explorer:** same Atlas cluster as `.env`, database **`MIGRATION_TARGET_DB`**, collections `customers`, `products`, `orders`, `payments`.
 
 ### Optional — state DB on Atlas
 
