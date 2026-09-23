@@ -43,3 +43,12 @@ def test_discovery_prompt_is_markdown_not_json_schema() -> None:
     assert "## Discovery review" in text
     assert "response_schema" not in text
     assert "Approved" in text
+
+
+def test_incomplete_discovery_prompt_requires_explicit_waiver() -> None:
+    text = format_discovery_review_prompt(
+        summary="Several areas are missing.",
+        completeness_score=0.7,
+        gaps="Recovery objectives are unknown.",
+    )
+    assert "Approved with waiver" in text

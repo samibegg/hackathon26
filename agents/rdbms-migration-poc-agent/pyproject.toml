@@ -22,6 +22,7 @@ dependencies = [
 [project.scripts]
 rdbms-migration-poc-agent = "agent_rdbms_migration_poc.main:main"
 migration-run = "agent_rdbms_migration_poc.migration.cli:main"
+migration-e2e = "agent_rdbms_migration_poc.migration.e2e:main"
 
 [build-system]
 requires = ["hatchling"]

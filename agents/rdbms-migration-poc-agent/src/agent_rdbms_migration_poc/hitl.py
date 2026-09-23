@@ -73,6 +73,12 @@ def format_discovery_review_prompt(
     completeness_score: float,
     gaps: str,
 ) -> str:
+    waiver_instruction = ""
+    if completeness_score < 0.8:
+        waiver_instruction = (
+            "\n\n**Incomplete discovery:** Planning remains blocked unless you explicitly reply "
+            "`Approved with waiver` and record the accepted gaps in your notes."
+        )
     return (
         "## Discovery review (gate 1 of 3)\n\n"
         f"**Completeness score:** {completeness_score:.2f}\n\n"
@@ -80,7 +86,8 @@ def format_discovery_review_prompt(
         f"{summary.strip()}\n\n"
         "### Gaps / follow-ups\n\n"
         f"{(gaps or 'None noted.').strip()}\n\n"
-        "**Question:** Approve discovery intake before schema design?\n\n"
+        "**Question:** Approve discovery intake before schema design?"
+        f"{waiver_instruction}\n\n"
         f"{HITL_REPLY_HINT}"
     )
 

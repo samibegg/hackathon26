@@ -27,9 +27,15 @@ sandboxes:
             - parse_postgres_ddl
             - build_source_inventory
             - score_discovery_completeness
+            - extract_structured_discovery_intake
+            - cross_check_discovery_with_source
             - propose_target_schema_design
             - generate_migration_plan
+            - generate_pipeline_architecture
             - get_session_artifacts
+            - get_poc_pack_artifacts
+            - list_persisted_poc_packs
+            - get_poc_pack_review
             - execute_migration_pipeline
             - run_validation_checks
 version: 0.1.0

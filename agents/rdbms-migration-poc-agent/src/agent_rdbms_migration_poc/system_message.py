@@ -49,13 +49,20 @@ Before migration, call `check_postgres_connection` if row counts fail — seed P
 
 1. **`prepare_ecommerce_mvp_for_migration`** (preferred one-shot) OR `load_bundled_demo_inputs` + separate parse/score/plan tools.
 2. `score_discovery_completeness` — if score < 0.8, list gaps before proceeding.
-3. `approve_discovery_completeness` — **HITL gate 1** (interrupt).
+   Use `extract_structured_discovery_intake` for evidence-linked facts and open questions.
+   Run `cross_check_discovery_with_source` after parsing DDL to identify mismatched entities, relationship gaps, and sensitive fields.
+3. `approve_discovery_completeness` — **HITL gate 1** (interrupt). Scores below 0.8 require the architect to reply `Approved with waiver` and state the accepted gaps.
 4. `build_source_inventory` (with row counts if POSTGRES_URI is configured).
 5. `propose_target_schema_design` — explain embed `line_items` under `orders`; payments separate.
 6. `approve_target_schema` — **HITL gate 2**.
 7. `generate_migration_plan` — show mapping summary from the plan JSON.
+   `generate_pipeline_architecture` documents extract, transform, load, validate, and exclusions.
 8. `approve_migration_execution` — **HITL gate 3** (confirm target DB, e.g. commerce_poc).
 9. `execute_migration_pipeline` then `run_validation_checks` — present pass/fail checks.
+10. `get_poc_pack_review` — render the persisted discovery-to-validation review in Playground.
+
+If a review is empty, call `list_persisted_poc_packs`. Use a returned session ID with
+`get_poc_pack_review` to inspect or reuse a prior Atlas-backed PoC pack.
 
 ## Modeling defaults for bundled scenario
 

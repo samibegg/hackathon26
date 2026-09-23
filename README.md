@@ -32,19 +32,20 @@ What works today in `agents/rdbms-migration-poc-agent/`:
 | Demo Postgres + seed (~25k rows) | Done | `docker-compose.postgres.yml`, `scripts/seed-postgres-demo.sh` |
 | Deterministic Postgres → Mongo runner | Done | Embed logic, indexes, `migration-run --skip-llm` |
 | Reference `migration-plan.json` | Done | `demo/migration-plan.reference.json` |
-| Discovery 10-area keyword scorer | Done | `ready_for_poc` at 0.8 in scorer; not enforced in plan/migrate tools |
+| Discovery 10-area keyword scorer | Done | `ready_for_poc` at 0.8; plan and execution require approval or an explicit Gate 1 waiver |
 | DDL parser + source inventory | Done | Lightweight parser; FK references; optional live row counts |
 | Canonical target schema + embed rationale | Done | Bundled e-commerce + `simple_three_table` workshop |
 | LangGraph orchestrator + tools | Done | Six “specialist” roles via tools (single runtime) |
 | Session workspace (file or MongoDB) | Done | `MIGRATION_STATE_MONGODB_URI` + file fallback; see `workspace.py` |
 | Postgres pre-flight | Done | `check_postgres_connection` |
-| HITL interrupts (3 gates) | Partial | Gate 3 enforced before `execute_migration_pipeline`; gates 1–2 interrupt + artifacts but not checked on downstream tools |
+| HITL interrupts (3 gates) | Done | Execution requires approved discovery, schema, and execution gates |
 | HITL Playground UX | Done | Markdown review briefs; plain-language approve/reject |
 | Playground transcript input | Done | `agent.yaml` transcript field + `playground-sample-payload.json` extra args |
-| Playground artifact panels | Not started | Session JSON via `get_session_artifacts` only |
+| Playground artifact panels | Done | `get_poc_pack_review` renders timestamped Markdown review cards; raw pack remains available for reuse |
 | Operator / architecture docs | Done | `docs/DEMO_ENVIRONMENT.md`, `architecture.md`, demo script |
-| Structured LLM discovery intake | Not started | Keyword score only |
-| Plan synthesis from inventory | Partial | Loads **reference plan** when 5-table inventory matches; not derived from approved design |
+| Structured LLM discovery intake | Done | Evidence-linked JSON extraction with deterministic fallback; keyword score remains the Gate 1 authority |
+| Plan synthesis from inventory | Done | Deterministically generates the e-commerce runner plan; golden-tested against the reference plan |
+| MongoDB pre-flight | Done | `check_mongodb_connection` pings the configured target before execution |
 | CI / golden migration tests | Not started | Unit tests in agent; no GitHub Actions |
 | Skills + procedural memory | Not started | Spec Phase 4 |
 
@@ -68,6 +69,7 @@ What works today in `agents/rdbms-migration-poc-agent/`:
 - [`docs/DEMO_ENVIRONMENT.md`](docs/DEMO_ENVIRONMENT.md) — Postgres seed, Atlas vs local Mongo, Compass
 - [`docs/architecture.md`](docs/architecture.md) — demo orchestrator, MongoDB state, env vars
 - [`docs/PRODUCTION_MULTI_AGENT.md`](docs/PRODUCTION_MULTI_AGENT.md) — two-agent production reference
+- [`docs/CI.md`](docs/CI.md) — pull-request checks and manual Atlas verification
 - `packages/migration-core/` — shared runner, workspace, HITL (for prod agents; demo uses inline code)
 - `agents/rdbms-migration-poc-agent/` — **demo agent** (`agentic dev up`)
 
@@ -115,22 +117,22 @@ Prioritized next work — no code committed for these until picked up:
 
 ### P0 — Demo trust and success criteria
 
-- [ ] **Enforce HITL gates in tools:** require approved discovery + schema before `execute_migration_pipeline` (execution already checked).
-- [ ] **Enforce completeness gate:** block plan generation / migration when score &lt; 0.8 unless gate 1 records an explicit waiver.
-- [ ] **Deterministic plan generation:** build `migration-plan.json` from inventory + approved design; golden test equals `demo/migration-plan.reference.json` for bundled DDL.
-- [ ] **Mongo pre-flight:** `check_mongodb_connection` (symmetric with Postgres).
+- [x] **Enforce HITL gates in tools:** require approved discovery + schema before `execute_migration_pipeline` (execution already checked).
+- [x] **Enforce completeness gate:** block plan generation / migration when score &lt; 0.8 unless gate 1 records an explicit waiver.
+- [x] **Deterministic plan generation:** build `migration-plan.json` from inventory + approved design; golden test equals `demo/migration-plan.reference.json` for bundled DDL.
+- [x] **Mongo pre-flight:** `check_mongodb_connection` (symmetric with Postgres).
 
 ### P1 — PoC pack visibility
 
-- [ ] **Playground artifacts** for discovery summary, target schema, field mapping, validation report (follow `data-analyst-agent` / platform patterns in `magenta-examples`).
+- [x] **Playground artifacts** for discovery summary, target schema, field mapping, validation report (timestamped Markdown review via `get_poc_pack_review`).
 - [ ] **Standalone discovery playbook** (`docs/discovery-playbook.md`) for field review — 10 sections, required fields, assumptions.
-- [ ] **Transcript ↔ DDL cross-check** in source inventory (table names, risk flags).
-- [ ] **Pipeline architecture** artifact (extract → transform → load → validate; cutover out of scope).
+- [x] **Transcript ↔ DDL cross-check** in source inventory (table names, relationship, sensitive-data, and assumption risks).
+- [x] **Pipeline architecture** artifact (extract → transform → load → validate; cutover out of scope).
 
 ### P2 — Quality and reuse
 
 - [ ] **LangGraph subgraphs or tool groups** for clearer specialist phases without second Playground (optional UX polish on demo agent).
-- [ ] **GitHub Actions:** `uv sync`, unit tests; optional Postgres service job.
+- [x] **GitHub Actions:** unit tests, Ruff, whitespace checks, and a Postgres-to-local-Mongo smoke job; manual Atlas e2e.
 - [ ] **Integration/golden tests:** validation fixtures; headless migration smoke (with secrets in CI or skipped).
 - [ ] **Skills** extracted per spec (Postgres inventory, MongoDB schema design, migration validation).
 - [ ] **Procedural memory** / playbook replay (optional; align with platform memory when needed).

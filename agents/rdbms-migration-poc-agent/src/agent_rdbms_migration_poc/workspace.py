@@ -11,6 +11,9 @@ from __future__ import annotations
 
 import json
 import os
+import hashlib
+import uuid
+from datetime import datetime, timezone
 from functools import lru_cache
 from pathlib import Path
 from typing import Any, Literal
@@ -24,11 +27,14 @@ _PAYLOAD_TRANSCRIPT_KEYS = (
 )
 
 _WORKSPACE_COLLECTION = "migration_workspace"
+_POC_ARTIFACT_COLLECTION = "migration_poc_artifacts"
 
 
 def session_key() -> str:
     sid = get_current_session_id()
-    return sid if sid else "default"
+    if sid:
+        return sid
+    return os.environ.get("MIGRATION_SESSION_ID", "").strip() or "default"
 
 
 def workspace_backend() -> Literal["mongodb", "file"]:
@@ -120,6 +126,80 @@ def put_artifact(name: str, value: Any) -> None:
 
 def get_artifact(name: str, default: Any = None) -> Any:
     return _load().get(name, default)
+
+
+def _json_safe(value: Any) -> Any:
+    return json.loads(json.dumps(value, default=str))
+
+
+def record_poc_artifact(kind: str, value: Any) -> dict[str, Any]:
+    """Append an immutable PoC-pack artifact for traceability and later reuse."""
+    payload = _json_safe(value)
+    content = json.dumps(payload, sort_keys=True, separators=(",", ":"))
+    record = {
+        "_id": str(uuid.uuid4()),
+        "session_id": session_key(),
+        "kind": kind,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "content_sha256": hashlib.sha256(content.encode("utf-8")).hexdigest(),
+        "payload": payload,
+    }
+    if resolve_state_mongodb_uri():
+        client = _mongo_client()
+        coll = client[state_database_name()][_POC_ARTIFACT_COLLECTION]
+        counter = client[state_database_name()][_WORKSPACE_COLLECTION].find_one_and_update(
+            {"_id": session_key()},
+            {"$inc": {"poc_pack_sequence": 1}},
+            upsert=True,
+            return_document=True,
+        )
+        record["sequence"] = counter["poc_pack_sequence"]
+        coll.create_index([("session_id", 1), ("sequence", 1)], unique=True)
+        coll.insert_one(record)
+    else:
+        ws = _load()
+        pack = ws.setdefault("poc_pack", [])
+        record["sequence"] = len(pack) + 1
+        pack.append(record)
+        _save(ws)
+    return record
+
+
+def get_poc_pack(session_id: str = "") -> list[dict[str, Any]]:
+    """Return a session's immutable artifacts in workflow order."""
+    key = session_id.strip() or session_key()
+    if resolve_state_mongodb_uri():
+        coll = _mongo_client()[state_database_name()][_POC_ARTIFACT_COLLECTION]
+        return list(coll.find({"session_id": key}).sort("sequence", 1))
+    if key != session_key():
+        return []
+    return _load().get("poc_pack", [])
+
+
+def list_poc_packs(limit: int = 10) -> list[dict[str, Any]]:
+    """List recent persisted packs for cross-session review and reuse."""
+    if not resolve_state_mongodb_uri():
+        pack = get_poc_pack()
+        return (
+            [{"session_id": session_key(), "artifact_count": len(pack), "latest_at": ""}]
+            if pack
+            else []
+        )
+    coll = _mongo_client()[state_database_name()][_POC_ARTIFACT_COLLECTION]
+    pipeline = [
+        {
+            "$group": {
+                "_id": "$session_id",
+                "artifact_count": {"$sum": 1},
+                "latest_at": {"$max": "$created_at"},
+                "kinds": {"$addToSet": "$kind"},
+            }
+        },
+        {"$sort": {"latest_at": -1}},
+        {"$limit": limit},
+        {"$project": {"_id": 0, "session_id": "$_id", "artifact_count": 1, "latest_at": 1, "kinds": 1}},
+    ]
+    return list(coll.aggregate(pipeline))
 
 
 def resolve_discovery_transcript(explicit: str = "") -> str:

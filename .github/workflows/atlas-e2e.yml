@@ -1,0 +1,48 @@
+name: Atlas End-to-End
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    working-directory: agents/rdbms-migration-poc-agent
+
+jobs:
+  atlas-e2e:
+    name: Atlas migration and persisted PoC pack
+    runs-on: ubuntu-latest
+    environment: atlas-e2e
+    env:
+      MONGODB_URI: ${{ secrets.MONGODB_URI }}
+      MIGRATION_STATE_MONGODB_URI: ${{ secrets.MIGRATION_STATE_MONGODB_URI }}
+      MIGRATION_STATE_DB: migration_poc_state
+      MIGRATION_TARGET_DB: ci_migration_e2e
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: astral-sh/setup-uv@v6
+      - name: Configure private dependency access
+        env:
+          MAGENTA_CLIENT_LIBRARIES_TOKEN: ${{ secrets.MAGENTA_CLIENT_LIBRARIES_TOKEN }}
+        run: |
+          test -n "$MAGENTA_CLIENT_LIBRARIES_TOKEN" || {
+            echo "Set MAGENTA_CLIENT_LIBRARIES_TOKEN to read 10gen/magenta-client-libraries."
+            exit 1
+          }
+          git config --global url."https://x-access-token:${MAGENTA_CLIENT_LIBRARIES_TOKEN}@github.com/10gen/".insteadOf "https://github.com/10gen/"
+      - run: uv sync --locked --group dev
+      - name: Require Atlas secrets
+        run: |
+          test -n "$MONGODB_URI"
+          test -n "$MIGRATION_STATE_MONGODB_URI"
+      - name: Seed deterministic Postgres demo
+        run: ./scripts/seed-postgres-demo.sh
+      - name: Migrate, validate, and persist the PoC pack
+        env:
+          POSTGRES_URI: postgresql://commerce:commerce@localhost:5433/commerce_demo
+        run: uv run migration-e2e --session-id "ci-${{ github.run_id }}"

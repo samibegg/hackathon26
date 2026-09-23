@@ -9,7 +9,12 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-from agent_rdbms_migration_poc.migration.plan import demo_reference_plan_path, load_plan
+from agent_rdbms_migration_poc.migration.ddl_parser import inventory_from_ddl
+from agent_rdbms_migration_poc.migration.examples import read_example_ddl
+from agent_rdbms_migration_poc.migration.plan import (
+    build_ecommerce_migration_plan,
+    canonical_ecommerce_schema_design,
+)
 from agent_rdbms_migration_poc.migration.runner import run_migration, run_validation
 
 
@@ -19,14 +24,19 @@ def main() -> None:
     parser.add_argument(
         "--plan",
         type=Path,
-        default=demo_reference_plan_path(),
-        help="Path to migration-plan.json",
+        help="Optional path to a migration-plan.json; defaults to the generated e-commerce plan",
     )
     parser.add_argument("--skip-llm", action="store_true", help="No-op flag for demo scripts")
     parser.add_argument("--validate-only", action="store_true")
     args = parser.parse_args()
 
-    plan = load_plan(args.plan)
+    if args.plan:
+        plan = json.loads(args.plan.read_text(encoding="utf-8"))
+    else:
+        _, ddl = read_example_ddl("ecommerce_mvp")
+        plan = build_ecommerce_migration_plan(
+            inventory_from_ddl(ddl), canonical_ecommerce_schema_design()
+        )
     if args.validate_only:
         report = run_validation(plan)
     else:

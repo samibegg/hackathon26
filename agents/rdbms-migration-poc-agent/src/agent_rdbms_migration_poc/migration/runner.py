@@ -146,7 +146,6 @@ def run_validation(plan: dict[str, Any]) -> dict[str, Any]:
             parent_coll = embed["parent_collection"]
             child_table = embed["child_table"]
             array_field = embed["array_field"]
-            parent_key = embed["parent_key"]
             with pg_conn.cursor() as cur:
                 cur.execute(f'SELECT COUNT(*) FROM "{child_table}"')  # noqa: S608
                 pg_items = cur.fetchone()[0]

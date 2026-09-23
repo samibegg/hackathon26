@@ -25,13 +25,32 @@
 | 3 | Agent scores discovery, proposes schema | Completeness score, embed rationale |
 | 4 | Approve HITL gates (discovery → schema → execution) | Review panels |
 | 5 | Migration + validation tools run | Pass/fail reconciliation |
-| 6 | Atlas Data Explorer / Compass | `orders` with `line_items[]`, separate `payments` |
+| 6 | Playground: “Show my PoC pack review” | Timestamped discovery-to-validation Markdown review |
+| 7 | Atlas Data Explorer / Compass | `orders` with `line_items[]`, separate `payments` |
 
 ## Fallback (no LLM)
 
 ```bash
 uv run migration-run --skip-llm
 ```
+
+## One-command end-to-end smoke test
+
+With `agentic dev up` running, execute:
+
+```bash
+./scripts/run-e2e-demo.sh
+```
+
+It reseeds Postgres, runs the deterministic Atlas migration, records a complete approved test pack,
+and prints its persisted session ID plus Markdown review. It replaces the demo collections in
+`MIGRATION_TARGET_DB`.
+
+## Reusing a persisted PoC pack
+
+PoC-pack reviews are scoped to the active Playground session. If a new session reports no
+artifacts, ask the agent to list persisted PoC packs, then request a review using the returned
+session ID. The stored pack remains immutable in the Atlas state database.
 
 ## Narrative
 

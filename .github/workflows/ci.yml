@@ -1,0 +1,77 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main, ci/repeatable-migration-tests]
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    working-directory: agents/rdbms-migration-poc-agent
+
+jobs:
+  quality:
+    name: Unit tests and lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: astral-sh/setup-uv@v6
+      - name: Configure private dependency access
+        env:
+          MAGENTA_CLIENT_LIBRARIES_TOKEN: ${{ secrets.MAGENTA_CLIENT_LIBRARIES_TOKEN }}
+        run: |
+          test -n "$MAGENTA_CLIENT_LIBRARIES_TOKEN" || {
+            echo "Set MAGENTA_CLIENT_LIBRARIES_TOKEN to read 10gen/magenta-client-libraries."
+            exit 1
+          }
+          git config --global url."https://x-access-token:${MAGENTA_CLIENT_LIBRARIES_TOKEN}@github.com/10gen/".insteadOf "https://github.com/10gen/"
+      - run: uv sync --locked --group dev
+      - run: uv run pytest -q
+      - run: uv run ruff check .
+      - name: Check whitespace errors
+        run: git diff --check
+
+  deterministic-smoke:
+    name: Deterministic Postgres-to-Mongo smoke
+    runs-on: ubuntu-latest
+    needs: quality
+    services:
+      mongodb:
+        image: mongo:8
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --eval 'db.runCommand({ ping: 1 })'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      POSTGRES_URI: postgresql://commerce:commerce@localhost:5433/commerce_demo
+      MONGODB_URI: mongodb://localhost:27017
+      MIGRATION_TARGET_DB: ci_migration_smoke
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: astral-sh/setup-uv@v6
+      - name: Configure private dependency access
+        env:
+          MAGENTA_CLIENT_LIBRARIES_TOKEN: ${{ secrets.MAGENTA_CLIENT_LIBRARIES_TOKEN }}
+        run: |
+          test -n "$MAGENTA_CLIENT_LIBRARIES_TOKEN" || {
+            echo "Set MAGENTA_CLIENT_LIBRARIES_TOKEN to read 10gen/magenta-client-libraries."
+            exit 1
+          }
+          git config --global url."https://x-access-token:${MAGENTA_CLIENT_LIBRARIES_TOKEN}@github.com/10gen/".insteadOf "https://github.com/10gen/"
+      - run: uv sync --locked --group dev
+      - name: Seed deterministic Postgres demo
+        run: ./scripts/seed-postgres-demo.sh
+      - name: Migrate and validate
+        run: uv run migration-run --skip-llm

@@ -16,6 +16,10 @@ cp env.example .env               # Atlas or local Mongo — see ../../docs/DEMO
 agentic dev up                    # Playground http://localhost:3000
 ```
 
+The seed is deterministic realistic synthetic data, configured by
+[`demo/scenario.json`](demo/scenario.json). Use [`demo/SCENARIO_PROMPT.md`](demo/SCENARIO_PROMPT.md)
+to turn end-user requirements into a reviewed scenario before reseeding.
+
 Live demo script: [`DEMO.md`](DEMO.md).
 
 Headless:
@@ -24,4 +28,10 @@ Headless:
 export POSTGRES_URI=postgresql://commerce:commerce@localhost:5433/commerce_demo
 export MONGODB_URI=...
 uv run migration-run --skip-llm
+```
+
+End-to-end demo with seeded Postgres, Atlas migration, validation, and a persisted PoC-pack review:
+
+```bash
+./scripts/run-e2e-demo.sh
 ```

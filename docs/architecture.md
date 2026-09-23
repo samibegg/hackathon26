@@ -139,12 +139,28 @@ sequenceDiagram
 
 | Concern | Mechanism | Location |
 |---------|-----------|----------|
-| **PoC pack artifacts (session)** | MongoDB when `MIGRATION_STATE_MONGODB_URI` is set; else file `.mws` | `MIGRATION_STATE_DB` (default `migration_poc_state`), collection `migration_workspace` — see `workspace.py` |
+| **PoC pack artifacts (session)** | MongoDB when `MIGRATION_STATE_MONGODB_URI` is set; else file `.mws` | Mutable workspace in `migration_workspace`; immutable ordered pack in `migration_poc_artifacts` |
 | **LangGraph thread / HITL resume** | Platform checkpointer (AER + OE) | Managed by Agentic Platform when running `agentic dev up` |
 | **Platform memory (STM/LTM)** | `project-config.yaml` | Project-level; agent has `memory: false` in `agent.yaml` today |
 | **Migration target data** | `run_migration()` via PyMongo | Database name `MIGRATION_TARGET_DB` (default `commerce_poc`) on cluster **`MONGODB_URI`** |
 
 File workspace works for **one agent** and **one dev machine**. It does **not** share cleanly across **multiple agent processes** or hosts — that is the main reason to move PoC pack artifacts to MongoDB.
+
+### Immutable PoC-pack artifacts
+
+When state MongoDB is configured, `workspace.py` appends each reviewed output to
+`migration_poc_artifacts`. Records are scoped to the platform `session_id` and include a
+monotonic `sequence`, UTC `created_at`, stable record `_id`, and `content_sha256`. The
+payload types are emitted in workflow order: `discovery_assessment`, `source_inventory`,
+`hitl_discovery`, `target_schema_design`, `hitl_schema`, `field_mapping`, `migration_plan`,
+`hitl_execution`, `migration_execution`, and `validation_report`. This is the traceable
+handoff/reuse contract; the mutable
+`migration_workspace` document remains the current-session working state.
+
+Use `get_poc_pack_review` in Playground for a Markdown review, or `get_poc_pack_artifacts`
+for raw reusable JSON. Reviews are session-scoped: `list_persisted_poc_packs` lists recent
+Atlas-backed sessions, and either retrieval tool accepts a selected session ID. File-backed
+local runs retain only the active session's records in its `.mws` file.
 
 ---
 
@@ -174,7 +190,7 @@ Use **two logical uses** on one Atlas cluster (different databases) or two URIs 
 | Variable | Purpose | Used by |
 |----------|---------|---------|
 | **`MONGODB_URI`** | **Migration target** — where the deterministic runner loads PoC **customer-shaped data** (`customers`, `orders`, …) | `migration/runner.py`, `execute_migration_pipeline` |
-| **`MIGRATION_STATE_MONGODB_URI`** | **Shared PoC pack / multi-agent state** — artifacts, HITL flags, engagement documents | `workspace.py` when set; collection `migration_workspace` in `MIGRATION_STATE_DB` |
+| **`MIGRATION_STATE_MONGODB_URI`** | **Shared PoC pack / multi-agent state** — artifacts, HITL flags, engagement documents | `workspace.py` when set; `migration_workspace` plus append-only `migration_poc_artifacts` in `MIGRATION_STATE_DB` |
 | **`MIGRATION_STATE_DB`** | Database name for state collections (default `migration_poc_state`) | `workspace.py` |
 | **`MIGRATION_TARGET_DB`** | Target database name for loaded commerce data (e.g. `commerce_poc`) | Runner |
 
