@@ -1,3 +1,6 @@
 services:
   playground:
     port: 3000
+
+# Demo Postgres is not a first-class Agentic service; it is merged via COMPOSE_FILE in .env
+# (see env.example). After `cp env.example .env`, run `agentic dev up` — same as Playground only.

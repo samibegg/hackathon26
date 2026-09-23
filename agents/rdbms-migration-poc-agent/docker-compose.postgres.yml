@@ -1,3 +1,6 @@
+# Demo source DB — merged into `agentic dev up` via COMPOSE_FILE (see env.example).
+# Standalone: docker compose -p rdbms-migration-poc-postgres -f docker-compose.postgres.yml up -d
+
 services:
   postgres-demo:
     image: postgres:16-alpine
@@ -7,8 +10,15 @@ services:
       POSTGRES_DB: commerce_demo
     ports:
       - "5433:5432"
+    volumes:
+      - postgres-demo-data:/var/lib/postgresql/data
+      - ./demo/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./demo/seed.sql:/docker-entrypoint-initdb.d/02-seed.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U commerce -d commerce_demo"]
       interval: 3s
       timeout: 5s
       retries: 10
+
+volumes:
+  postgres-demo-data:

@@ -18,19 +18,33 @@ The deterministic runner writes **customer-shaped data** only to **`MONGODB_URI`
 
 ## PostgreSQL (required for full migrate + validate)
 
-### Start and seed (no host `psql` required)
+### Start Postgres with `agentic dev up` (recommended)
+
+1. `cp env.example .env` and set secrets (`OPENAI_API_KEY`, Mongo targets, etc.).
+2. Ensure `.env` includes **`COMPOSE_FILE`** (in `env.example`) so the dev stack merges `docker-compose.postgres.yml`.
+3. Run:
 
 ```bash
-cd agents/rdbms-migration-poc-agent
-./scripts/seed-postgres-demo.sh
+agentic dev up
 ```
 
-The script starts `docker-compose.postgres.yml`, applies `demo/schema.sql` and `demo/seed.sql` **inside** the container, and prints row counts.
+Playground on **http://localhost:3000**; Postgres on **5433**. On a **new** Docker volume, Postgres runs `demo/schema.sql` and `demo/seed.sql` once via `docker-entrypoint-initdb.d` (first start can take ~1 minute).
 
-**Container name:** `rdbms-migration-poc-agent-postgres-demo-1` (port **5433** → 5432).  
-It is **not** started by `agentic dev up` — only by this script (or `docker compose -f docker-compose.postgres.yml up -d`).
+If you already had a Postgres volume from an older setup, run `./scripts/seed-postgres-demo.sh --force` or remove the `postgres-demo-data` volume and restart dev.
 
-Docker may warn about **orphan containers** (Playground stack from the same compose project name). Safe to ignore while dev is running.
+### Postgres only (troubleshooting)
+
+```bash
+./scripts/ensure-postgres-demo.sh
+```
+
+Full reset of demo data:
+
+```bash
+./scripts/seed-postgres-demo.sh --force
+```
+
+`./scripts/dev-up.sh` is equivalent to `ensure-postgres-demo.sh` + `agentic dev up` when you are **not** using `COMPOSE_FILE` in `.env`.
 
 ### `POSTGRES_URI` by runtime
 

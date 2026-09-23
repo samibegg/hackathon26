@@ -79,10 +79,9 @@ Agent docs: [`agents/rdbms-migration-poc-agent/README.md`](agents/rdbms-migratio
 
 ```bash
 cd agents/rdbms-migration-poc-agent
-cp env.example .env   # Postgres + Mongo target — see docs/DEMO_ENVIRONMENT.md
+cp env.example .env   # includes COMPOSE_FILE to start Postgres with agentic dev up
 
-./scripts/seed-postgres-demo.sh   # required for full migrate + validate (Postgres :5433)
-agentic dev up                    # Playground http://localhost:3000
+agentic dev up        # Playground :3000 + demo Postgres :5433
 ```
 
 Headless fallback (no LLM):
@@ -149,7 +148,7 @@ Prioritized next work — no code committed for these until picked up:
 
 A Technical Architect can:
 
-1. Run `scripts/seed-postgres-demo.sh` and `agentic dev up`
+1. Run `./scripts/dev-up.sh` or `agentic dev up` with `COMPOSE_FILE` in `.env` (see `env.example`)
 2. Use the bundled discovery transcript (Playground input or extra args) and load DDL in Playground
 3. Review and approve target schema at HITL gates
 4. Execute migration and see all five source tables represented in MongoDB (four collections + embedded line items)

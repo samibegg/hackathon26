@@ -11,10 +11,11 @@ Shared runner/workspace reference library (for future prod agents): [`../../pack
 ## Quick start
 
 ```bash
-cp env.example .env               # Atlas or local Mongo — see ../../docs/DEMO_ENVIRONMENT.md
-./scripts/seed-postgres-demo.sh   # required for full migrate (Postgres :5433)
-agentic dev up                    # Playground http://localhost:3000
+cp env.example .env               # COMPOSE_FILE merges Postgres into agentic dev up
+agentic dev up                    # Playground http://localhost:3000 + Postgres :5433
 ```
+
+Fallback: `./scripts/dev-up.sh` or `./scripts/ensure-postgres-demo.sh` if Postgres is not in the stack.
 
 Live demo script: [`DEMO.md`](DEMO.md).
 

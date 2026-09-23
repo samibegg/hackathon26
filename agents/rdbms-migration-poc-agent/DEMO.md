@@ -2,8 +2,8 @@
 
 ## Prerequisites
 
-- `agentic dev up` for this agent
-- `./scripts/seed-postgres-demo.sh` (Postgres on port **5433** — no local `psql` needed)
+- `cp env.example .env` (includes **`COMPOSE_FILE`** so **`agentic dev up`** starts demo Postgres on **5433**)
+- Or `./scripts/dev-up.sh` / `./scripts/ensure-postgres-demo.sh` if not using `COMPOSE_FILE`
 - `.env`: `OPENAI_API_KEY`, `POSTGRES_URI` (`host.docker.internal:5433` from Docker), and Mongo target — see **[`docs/DEMO_ENVIRONMENT.md`](../../docs/DEMO_ENVIRONMENT.md)** (local dev Mongo vs Atlas + `MIGRATION_TARGET_DB`)
 
 ## Test discovery transcript input (Playground)
@@ -20,7 +20,7 @@
 
 | Step | Action | Audience sees |
 |------|--------|----------------|
-| 1 | Run seed script | 5 tables, ~25k rows |
+| 1 | `./scripts/dev-up.sh` (or seed + `agentic dev up`) | Postgres up; 5 tables, ~25k rows |
 | 2 | Playground: “Run the bundled e-commerce migration PoC” | Discovery + DDL loaded |
 | 3 | Agent scores discovery, proposes schema | Completeness score, embed rationale |
 | 4 | Approve HITL gates (discovery → schema → execution) | Review panels |
