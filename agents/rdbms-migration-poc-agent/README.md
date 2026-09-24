@@ -11,11 +11,12 @@ Shared runner/workspace reference library (for future prod agents): [`../../pack
 ## Quick start
 
 ```bash
-cp env.example .env               # COMPOSE_FILE merges Postgres into agentic dev up
-agentic dev up                    # Playground http://localhost:3000 + Postgres :5433
+cp env.example .env               # COMPOSE_FILE merges Postgres; optional Atlas MONGODB_URI
+./scripts/dev-up.sh               # Postgres :5433 + agentengine Playground http://localhost:3000
+# or: agentengine dev up
 ```
 
-Fallback: `./scripts/dev-up.sh` or `./scripts/ensure-postgres-demo.sh` if Postgres is not in the stack.
+For Atlas migrate target, set `MONGODB_URI=mongodb+srv://…` and `MIGRATION_TARGET_DB` (default `commerce_poc`) in `.env`. Call `check_mongodb_connection` in Playground — expect `"uri_kind": "atlas"`. See [`../../docs/DEMO_ENVIRONMENT.md`](../../docs/DEMO_ENVIRONMENT.md).
 
 Live demo script: [`DEMO.md`](DEMO.md).
 
