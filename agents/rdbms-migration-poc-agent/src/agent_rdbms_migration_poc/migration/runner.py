@@ -14,7 +14,10 @@ from agent_rdbms_migration_poc.migration.mongo_conn import (
     resolve_migration_mongodb_uri,
     resolve_migration_target_db,
 )
-from agent_rdbms_migration_poc.migration.postgres_conn import resolve_postgres_uri
+from agent_rdbms_migration_poc.migration.postgres_conn import (
+    connect_postgres,
+    resolve_postgres_uri,
+)
 
 
 def _json_safe(value: Any) -> Any:
@@ -63,7 +66,7 @@ def run_migration(plan: dict[str, Any]) -> dict[str, Any]:
         "target_uri_kind": mongodb_uri_kind(mongo_uri),
     }
 
-    with psycopg.connect(postgres_uri) as pg_conn:
+    with connect_postgres(postgres_uri) as pg_conn:
         mongo = MongoClient(mongo_uri)
         db = mongo[target_db]
 
@@ -127,7 +130,7 @@ def run_validation(plan: dict[str, Any]) -> dict[str, Any]:
     checks: list[dict[str, Any]] = []
     passed = True
 
-    with psycopg.connect(postgres_uri) as pg_conn:
+    with connect_postgres(postgres_uri) as pg_conn:
         mongo = MongoClient(mongo_uri)
         db = mongo[target_db]
 

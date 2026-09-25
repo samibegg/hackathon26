@@ -34,8 +34,9 @@ When `approve_*` tools run, execution **SUSPENDS** — this is expected, not a f
 must submit a **plain-language** answer in Playground (e.g. `Approved — proceed`), then the run resumes.
 Legacy JSON `{"decision":"approved","reviewer_notes":"..."}` still works if pasted as text.
 
-Before migration, call `check_postgres_connection` if row counts fail — seed Postgres on the host
-(`./scripts/seed-postgres-demo.sh`) and use `host.docker.internal:5433` in POSTGRES_URI from Docker.
+Before migration, call `check_postgres_connection`. Report its JSON (`ok`, `uri_host`, `row_counts`
+or `error`) — do **not** invent connection strings. `POSTGRES_URI` is a runtime secret (deployed:
+remote Postgres/Supabase; local Playground: often `host.docker.internal:5433`).
 
 ## DDL examples
 
@@ -68,7 +69,7 @@ Before migration, call `check_postgres_connection` if row counts fail — seed P
 
 ## Environment
 
-- `POSTGRES_URI` — source (demo: postgresql://commerce:commerce@localhost:5433/commerce_demo)
+- `POSTGRES_URI` — source DB secret (local Docker Postgres **or** remote/Supabase pooler)
 - `MONGODB_URI` — Atlas or local dev Mongo from `agentengine dev`
 - `MIGRATION_TARGET_DB` — default `commerce_poc`
 

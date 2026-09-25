@@ -6,7 +6,6 @@ import json
 import os
 from typing import Any
 
-import psycopg
 from langgraph.types import interrupt
 from agent_engine_sdk_langgraph import App
 
@@ -30,7 +29,11 @@ from agent_rdbms_migration_poc.migration.mongo_conn import (
     resolve_migration_mongodb_uri,
     resolve_migration_target_db,
 )
-from agent_rdbms_migration_poc.migration.postgres_conn import check_postgres, resolve_postgres_uri
+from agent_rdbms_migration_poc.migration.postgres_conn import (
+    check_postgres,
+    connect_postgres,
+    resolve_postgres_uri,
+)
 from agent_rdbms_migration_poc.hitl import (
     format_discovery_review_prompt,
     format_execution_review_prompt,
@@ -130,7 +133,7 @@ def register(app: App) -> None:
         if not postgres_uri:
             return inventory
         counts: dict[str, int] = {}
-        with psycopg.connect(postgres_uri, connect_timeout=5) as conn:
+        with connect_postgres(postgres_uri, connect_timeout=10) as conn:
             with conn.cursor() as cur:
                 for table in inventory.get("tables", []):
                     name = table["name"]
@@ -444,7 +447,7 @@ def register(app: App) -> None:
         resolved_db = resolve_migration_target_db(target_database or "commerce_poc")
         uri_kind = mongodb_uri_kind(resolve_migration_mongodb_uri())
         hint = postgres_uri_hint.strip() or (
-            "POSTGRES_URI configured for commerce_demo; use host.docker.internal:5433 from Docker"
+            "POSTGRES_URI project secret (remote Supabase/Postgres or local host.docker.internal:5433)"
         )
         answer = _await_hitl_approval(
             format_execution_review_prompt(
